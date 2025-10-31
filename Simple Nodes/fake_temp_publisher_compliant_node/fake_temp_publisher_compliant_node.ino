@@ -95,12 +95,11 @@ void loop() {
   }
 
   // Temperature every 1 s (fake steady 25 °C)
-  if (now - last_temp >= 1000) {
+  if (now - last_temp > 1000) {
     last_temp = now;
-    float t_c = readPT1000();
-    Scalar_1_0 msg;
-    msg.kelvin = t_c + 273.15f;
-    temp_pub->publish(msg);
+    Scalar_1_0 t{};
+    t.kelvin = 298.15F;   // 25 °C
+    temp_pub->publish(t);
   }
 }
 
@@ -109,25 +108,4 @@ void onReceiveBufferFull(CanardFrame const & frame) {
   digitalWrite(LED_PIN, HIGH);
   delayMicroseconds(100);
   digitalWrite(LED_PIN, LOW);
-}
-
-/**************************************************************************************
- * PT1000 READER (separate, simple, clean)
- **************************************************************************************/
-float readPT1000()
-{
-  constexpr uint8_t  ADC_PIN   = 27;      // GP27
-  constexpr float    VREF_V    = 3.3f;
-  constexpr uint16_t ADC_MAX   = 4095;
-  constexpr float    R_REF     = 1000.0f; // reference resistor (measure yours)
-  constexpr float    A = 3.9083e-3f, B = -5.775e-7f;
-
-  uint16_t raw = analogRead(ADC_PIN);
-  float v = (float)raw * VREF_V / ADC_MAX;
-  float rpt = (VREF_V * R_REF / v) - R_REF;        // PT1000 on high side
-
-  // Convert R→°C using quadratic (valid above 0 °C)
-  float disc = A*A - 4.0f*B*(1.0f - rpt / 1000.0f);
-  float t_c  = (-A + sqrtf(disc)) / (2.0f*B);
-  return t_c;
 }
